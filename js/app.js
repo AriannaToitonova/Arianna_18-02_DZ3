@@ -101,4 +101,56 @@ function openModalScroll() {
   }
 }
 
-window.addEventListener('scroll', openModalScroll)
+window.addEventListener('scroll', openModalScroll);
+
+//post запрос
+
+
+const forms = document.querySelectorAll("form");
+
+forms.forEach((item) => {
+  postData(item);
+  console.log(item);
+});
+
+const message = {
+  loading: "Идет загрузка",
+  success: "Спасибо, скоро свяжемся",
+  fail: "Что то пошло не так",
+};
+
+
+
+
+function postData (form) {
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const messageBlock = document.createElement("div");
+    messageBlock.textContent = message.loading;
+    form.append(messageBlock);
+
+    const request = new XMLHttpRequest();
+    request.open("POST", "server.php");
+    request.setRequestHeader("Content-type", "application/json");
+
+    
+    const formData = new FormData(form);
+    const object = {};
+    formData.forEach((item, i) => {
+      object[i] = item;
+    });
+    
+    const json = JSON.stringify(object);
+    request.send();
+
+    request.addEventListener('load', ()=> {
+      if (request.status === 300) {
+        console.log(request.response);
+        messageBlock.textContent = message.success;
+      } else {
+        messageBlock.textContent = message.fail;
+      }
+    })
+  })
+}
