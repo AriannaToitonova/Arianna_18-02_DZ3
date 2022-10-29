@@ -1,128 +1,84 @@
-const tabs = document.querySelectorAll('.tabheader__item')
-const tabsParent = document.querySelector('.tabheader__items')
-const tabContent = document.querySelectorAll('.tabcontent')
+const tabs = document.querySelectorAll(".tabheader__item");
+const tabsParent = document.querySelector(".tabheader__items");
+const tabContent = document.querySelectorAll(".tabcontent");
 
 const hideTabContent = () => {
-    tabContent.forEach((item) => {
-        item.style.display = "none";
-    });
-    tabs.forEach((item) => {
-        item.classList.remove("tabheader__item_active");
-    });
+  tabContent.forEach((item) => {
+    item.style.display = "none";
+  });
+  tabs.forEach((item) => {
+    item.classList.remove("tabheader__item_active");
+  });
 };
-const showTabContent = (i = 1) =>{
-    tabContent[i].style.display = 'block';
-    tabs[i].classList.add('tabheader__item_active')
+
+const showTabContent = (i = 0) => {
+  tabContent[i].style.display = "block";
+  tabs[i].classList.add("tabheader__item_active");
 };
 
 hideTabContent();
 showTabContent();
 
-tabsParent.addEventListener('click', (event)=>{
-    const target = event.target
-    tabs.forEach((item, i) =>{
-        if (target === item){
-            hideTabContent();
-            showTabContent(i);
-        }
-    });
-    });
-
-/////
-
-
-let slideIndex = 0;
-
 tabsParent.addEventListener("click", (event) => {
-    const target = event.target;
+  const target = event.target;
 
-    if (target.classList.contains("tabheader__item")) {
-        tabs.forEach((item, i) => {
-            if (target === item) {
-                slideIndex = i;
-                hideTabContent();
-                showTabContent(slideIndex);
-            }
-        });
-    }
+  if (target.classList.contains("tabheader__item")) {
+    tabs.forEach((item, i) => {
+      if (target === item) {
+        console.log(i);
+        hideTabContent();
+        showTabContent(i);
+      }
+    });
+  }
 });
 
-const timer = () => {
-    slideIndex++;
-    if (slideIndex > 3) {
-        slideIndex = 0;
-    }
-    hideTabContent()
-    showTabContent(slideIndex)
-}
-setInterval(timer, 2000)
+const modal = document.querySelector(".modal");
+const modalTrigger = document.querySelector(".btn_white");
+const closeModalBtn = document.querySelector(".modal__close");
 
-const modal = document.querySelector('.modal')
-const modalTrigger = document.querySelector('[data-modal]')
-const closeModalBtn = document.querySelector('.modal__close')
+const openModal = () => {
+  modal.classList.add("show");
+  modal.classList.remove("hide");
+  document.body.style.overflow = "hidden";
+};
+const closeModal = () => {
+  modal.classList.add("hide");
+  modal.classList.remove("show");
+  document.body.style.overflow = "";
+};
 
-modalTrigger.addEventListener('click', openModal)
+modalTrigger.addEventListener("click", openModal);
+closeModalBtn.addEventListener("click", closeModal);
 
-function openModal() {
-  modal.classList.add('show')
-  modal.classList.remove('hide')
-  document.body.style.overflow = 'hidden'
-
-  clearInterval(modalTimeout)
-}
-
-function closeModal() {
-  modal.classList.add('hide')
-  modal.classList.remove('show')
-  document.body.style.overflow = ''
-}
-
-closeModalBtn.addEventListener('click', closeModal)
-
-modal.addEventListener('click', (event) => {
-  if (event.target === modal) {
-    closeModal()
+modal.addEventListener("click", (event) => {
+  if (event.target == modal) {
+    closeModal();
   }
-})
-
-document.body.addEventListener('keydown', (event) => {
-  if (event.code === 'Backspace') {
-    closeModal()
-  }
-})
-
-function openModalScroll() {
-  const page = document.documentElement
-
-  if (page.scrollTop + page.clientHeight >= page.scrollHeight) {
-    openModal()
-
-    window.removeEventListener('scroll', openModalScroll)
-  }
-}
-
-window.addEventListener('scroll', openModalScroll);
-
-//post запрос
-
+});
 
 const forms = document.querySelectorAll("form");
 
 forms.forEach((item) => {
-  postData(item);
-  console.log(item);
+  bindPostData(item);
 });
 
 const message = {
-  loading: "Идет загрузка",
-  success: "Спасибо, скоро свяжемся",
-  fail: "Что то пошло не так",
+  loading: "Идет загрузка...",
+  success: "Спасибо, скоро свяжемся!",
+  fail: "Что-то пошло не так",
 };
 
+const postData = async (url, data) => {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-type": "application/json" },
+    body: data,
+  });
+  return res;
+};
 
-
-
-function postData (form) {
+function bindPostData(form) {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -130,27 +86,19 @@ function postData (form) {
     messageBlock.textContent = message.loading;
     form.append(messageBlock);
 
-    const request = new XMLHttpRequest();
-    request.open("POST", "server.php");
-    request.setRequestHeader("Content-type", "application/json");
-
-    
     const formData = new FormData(form);
+
     const object = {};
+
     formData.forEach((item, i) => {
       object[i] = item;
     });
-    
-    const json = JSON.stringify(object);
-    request.send();
 
-    request.addEventListener('load', ()=> {
-      if (request.status === 300) {
-        console.log(request.response);
-        messageBlock.textContent = message.success;
-      } else {
-        messageBlock.textContent = message.fail;
-      }
-    })
-  })
+    const json = JSON.stringify(object);
+
+    postData("server.php", json)
+      .then((data) => data.json())
+      .then((resp) => console.log(resp))
+      .catch((e) => console.error(e));
+  });
 }
