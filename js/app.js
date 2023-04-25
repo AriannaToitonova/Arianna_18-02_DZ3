@@ -33,6 +33,7 @@ tabsParent.addEventListener("click", (event) => {
   }
 });
 
+
 const modal = document.querySelector(".modal");
 const modalTrigger = document.querySelector(".btn_white");
 const closeModalBtn = document.querySelector(".modal__close");
@@ -56,49 +57,134 @@ modal.addEventListener("click", (event) => {
     closeModal();
   }
 });
+function openModalScroll() {
+  const page = document.documentElement
+  if (page.scrollTop + page.clientHeight >= page.scrollHeight) {
+    openModal()
+
+    window.removeEventListener('scroll', openModalScroll)
+  }
+}
+window.addEventListener('scroll', openModalScroll);
+
+//---------------//
+
+const sliderWrapper = document.querySelector('.offer__slider-wrapper');
+const slides = Array.from(sliderWrapper.querySelectorAll('.offer__slide'));
+const prevButton = document.querySelector('.offer__slider-prev');
+const nextButton = document.querySelector('.offer__slider-next');
+const currentNumber = document.querySelector('#current');
+const totalNumber = document.querySelector('#total');
+
+let slideIndex = 1;
+let timerId;
+
+function showSlide(index) {
+  if (index < 1) {
+    index = slides.length;
+  } else if (index > slides.length) {
+    index = 1;
+  }
+
+  const currentSlide = slides[slideIndex - 1];
+  const newSlide = slides[index - 1];
+  currentSlide.classList.add('hidden');
+  newSlide.classList.remove('hidden');
+  currentNumber.textContent = (index < 10 ? '0' : '') + index;
+  totalNumber.textContent = (slides.length < 10 ? '0' : '') + slides.length;
+  slideIndex = index;
+}
+
+
+function startSlider() {
+  timerId = setInterval(nextSlide, 2000);
+}
+
+function startTimer() {
+  timerId = setTimeout(startSlider, 5000);
+}
+
+function nextSlide() {
+  showSlide(slideIndex + 1);
+}
+
+function prevSlide() {
+  showSlide(slideIndex - 1);
+}
+
+prevButton.addEventListener('mouseover', () => clearInterval(timerId));
+nextButton.addEventListener('mouseover', () => clearInterval(timerId));
+prevButton.addEventListener('mouseout', startTimer);
+nextButton.addEventListener('mouseout', startTimer);
+prevButton.addEventListener('click', prevSlide);
+nextButton.addEventListener('click', nextSlide);
+
+showSlide(slideIndex);
+startSlider();
+
+
+//------------//
 
 const forms = document.querySelectorAll("form");
-
-forms.forEach((item) => {
-  bindPostData(item);
-});
-
-const message = {
-  loading: "Идет загрузка...",
-  success: "Спасибо, скоро свяжемся!",
-  fail: "Что-то пошло не так",
-};
-
-const postData = async (url, data) => {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-type": "application/json" },
-    body: data,
-  });
-  return res;
-};
-
-function bindPostData(form) {
+function postData(form) {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-
-    const messageBlock = document.createElement("div");
-    messageBlock.textContent = message.loading;
-    form.append(messageBlock);
-
     const formData = new FormData(form);
-
-    const object = {};
-
-    formData.forEach((item, i) => {
-      object[i] = item;
+    const obj = {};
+    formData.forEach((value, key) => {
+      obj[key] = value;
     });
+    const json = JSON.stringify(obj);
+    const request = new XMLHttpRequest();
+    request.open("POST", "server.php");
+    request.setRequestHeader("Content-type", "application/json");
+    request.send(json);
 
-    const json = JSON.stringify(object);
+    request.addEventListener("load", () => {
+      let message;
+      if (request.status === 200) {
+        message = "Успешно!!!!";
+      } else if (request.status === 400) {
+        message = "Ошибка!";
+      } else if (request.status === 500) {
+        message = "Фатальная ошибка";
+      }
 
-    postData("server.php", json)
-      .then((data) => data.json())
-      .then((resp) => console.log(resp))
-      .catch((e) => console.error(e));
+      const modal = document.createElement("div");
+      modal.classList.add("modal2");
+      modal.innerHTML = `
+        <div class="modal__content2">
+          <div class="modal__close2">&times;</div>
+          <div class="modal__title2">${message}</div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      const closeModal = () => {
+        modal.classList.add("hide");
+        modal.classList.remove("show");
+        document.body.style.overflow = "";
+        setTimeout(() => {
+          modal.remove();
+        }, 3000);
+      };
+
+      modal.addEventListener("click", (event) => {
+        if (event.target == modal || event.target.classList.contains("modal__close")) {
+          closeModal();
+        }
+      });
+
+      modal.classList.add("show");
+      modal.classList.remove("hide");
+      document.body.style.overflow = "hidden";
+      setTimeout(closeModal, 3000);
+    });
   });
 }
+
+
+forms.forEach((item) => {
+  postData(item);
+});
+
